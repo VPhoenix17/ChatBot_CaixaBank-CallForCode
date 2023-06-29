@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chatbot</title>
+    <style>
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: robotto, sans-serif;
+        background-image: url('https://preview.redd.it/g0vayxcbly8b1.png?width=960&crop=smart&auto=webp&v=enabled&s=9a414b2e0a5ed350d1e0e6918834cea5dfd6e0b0'); background-size: cover; background-repeat: no-repeat; 
+    }
+
+    .header {
+        position: relative;
+        display: flex;
+        height: 60px;
+        background-color: #38a1e9;
+        justify-content: center;
+        align-items: center;
+    }
+
+    img {
+        height: 40px;
+        width: 40px;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+
+    h1 {
+        color: #fff;
+        font-size: 18px;
+    }
+
+    .chat-icon {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        background-color: #38a1e9;
+        color: #fff;
+        width: 80px;
+        height: 80px;
+        border-radius: 100% 0 0 0;
+        text-align: center;
+        font-size: 24px;
+        line-height: 60px;
+        cursor: pointer;
+        z-index: 9999;
+        display: flex;
+        justify-content: right;
+        align-items: center;
+    }
+    
+    .chat-icon img {
+        max-width: 60%;
+        max-height: 60%;
+    }
+
+    .chatbox {
+        position: fixed;
+        bottom: 90px;
+        right: 20px;
+        height: 600px;
+        width: 350px;
+        background-color: #f1f1f1;
+        border: 1px solid #ccc;
+        padding: 10px;
+        display: none;
+        z-index: 9999;
+        border-radius: 6px;
+    }
+
+    .user-input {
+        width: 100%;
+        height:40px;
+        margin-top: 10px;
+        margin-bottom: 5px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    .bottom {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-top: 10px;
+    }
+
+    .record-button, .send-button {
+        background-color: #38a1e9;
+        color: #fff;
+        border: none;
+        padding: 10px;
+        cursor: pointer;
+        border-radius: 4px;
+        margin-left: 10px;
+    }
+
+    .record-button:hover, .send-button:hover {
+        background-color: #38a1e9;
+    }
+
+    .chat-history {
+        height: 400px;
+        overflow-y: auto;
+        margin-top: 10px;
+        border-top: 1px solid #ccc;
+        padding-top: 10px;
+    }
+
+    .chat-history div {
+        margin-bottom: 10px;
+    }
+
+    .chat-history strong {
+        font-weight: bold;
+    }
+
+
+        
+    </style>
+</head>
+<body>
+    <button class="chat-icon" onclick="toggleChatbox()"><img src="https://i.pinimg.com/originals/9b/0b/e8/9b0be8c632f8c9f8e2dd8267ef0723a0.jpg"></button>
+    <div class="chatbox" id="chatbox">
+        <div class="header">
+            <img src="https://i.pinimg.com/originals/9b/0b/e8/9b0be8c632f8c9f8e2dd8267ef0723a0.jpg">
+            <h2>Cai</h2>
+        </div>
+        <div class="chat-history" id="chat-history"></div>
+        <input type="text" class="user-input" id="user-input" placeholder="Type your message" onkeypress="handleKeyPress(event)">
+        <div class="bottom">
+            <button class="send-button" onclick="sendMessage()">Send</button>
+            <!-- Add a button to start recording -->
+            <button class="record-button" onclick="startRecording()">Start Recording</button>    
+        </div>
+        
+    </div>
+
+    <script>
+        var chatHistory = document.getElementById("chat-history");
+
+        function toggleChatbox() {
+            var chatbox = document.getElementById("chatbox");
+            if (chatbox.style.display === "none") {
+                chatbox.style.display = "block";
+            } else {
+                chatbox.style.display = "none";
+            }
+        }
+
+        function scrollToBottom() {
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function sendMessage() {
+            var userInput = document.getElementById("user-input").value;
+            if (userInput !== "") {
+                chatHistory.innerHTML += '<div><strong>You:</strong> ' + userInput + '</div>';
+
+                // Send the user input to the server using AJAX
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState === 4 && this.status === 200) {
+                        var response = JSON.parse(this.responseText).response;
+                        chatHistory.innerHTML += '<div><strong>Cai:</strong> ' + response + '</div>';
+                        scrollToBottom(); // Scroll to the bottom after adding the response
+                    }
+                };
+                xhttp.open("POST", "/submit", true);
+                xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                xhttp.send("user_input=" + userInput);
+
+                // Clear the user input field
+                document.getElementById("user-input").value = "";
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.keyCode === 13) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        var recognition;
+
+        function startRecording() {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = function() {
+                console.log('Recording started...');
+            };
+
+            recognition.onresult = function(event) {
+                var userInput = event.results[0][0].transcript;
+                document.getElementById('user-input').value = userInput;
+               
+                if (userInput !== "") {
+                    chatHistory.innerHTML += '<div><strong>You:</strong> ' + userInput + '</div>';
+                    // Clear the user input field
+                    document.getElementById("user-input").value = "";
+                    // Send the user input to the server using AJAX
+                    var xhttp = new XMLHttpRequest();
+                    xhttp.onreadystatechange = function() {
+                        if (this.readyState === 4 && this.status === 200) {
+                            var response = JSON.parse(this.responseText).response;
+                            chatHistory.innerHTML += '<div><strong>Cai:</strong> ' + response + '</div>';
+                        }
+                        scrollToBottom(); // Scroll to the bottom after adding the user's speech input
+                    };
+                    xhttp.open("POST", "/submit", true);
+                    xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                    xhttp.send("user_input=" + userInput);
+            
+                    
+                }
+            };
+
+            recognition.start();
+        }
+    </script>
+</body>
+</html>
